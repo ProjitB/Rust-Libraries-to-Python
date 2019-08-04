@@ -12,8 +12,20 @@ C = ffi.dlopen("target/release/librequest_export.dylib")
 def to_string(text):
     return ffi.new("char[]", text.encode("utf-8"))
 
+def read_string(bytes_string):
+    strf = b''
+    counter = 0
+    while True:
+        if bytes_string[counter] == b'\0':
+            break
+        strf += bytes_string[counter]
+        counter += 1
+    return strf.decode()
+
 a = C.rust_get(to_string("https://google.com"))
-print(a)
-print(dir(a))
-# pt = ffi.new("char[]", a.resp)
-# print(pt)
+output = read_string(a.response)
+
+print("\n-----PYTHON START ----\n")
+print(output)
+
+
