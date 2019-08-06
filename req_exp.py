@@ -7,7 +7,7 @@ ffi = FFI()
 ffi.cdef("""
    typedef struct {const char* response;} ReqStruct;
    ReqStruct rust_get(const char*);
-   int dict_pass(const char*, const char*);
+   void dict_pass(const char*, const char*);
 """)
 
 C = ffi.dlopen("target/release/librequest_export.dylib")
