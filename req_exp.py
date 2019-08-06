@@ -1,3 +1,4 @@
+import pickle
 from cffi import FFI
 from ctypes import c_char_p, cdll, cast
 
@@ -5,6 +6,7 @@ ffi = FFI()
 ffi.cdef("""
    typedef struct {const char* response;} ReqStruct;
    ReqStruct rust_get(const char*);
+   int dict_pass();
 """)
 
 C = ffi.dlopen("target/release/librequest_export.dylib")
@@ -22,10 +24,12 @@ def read_string(bytes_string):
         counter += 1
     return strf.decode()
 
-a = C.rust_get(to_string("https://google.com"))
-output = read_string(a.response)
+# a = C.rust_get(to_string("https://google.com"))
+# output = read_string(a.response)
 
-print("\n-----PYTHON START ----\n")
-print(output)
+to_pass = {'url': 'https://google.com'}
 
+with open('filename.pickle', 'wb') as handle:
+    pickle.dump(to_pass, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+C.dict_pass()
