@@ -6,11 +6,9 @@ use std::ffi::CString;
 use serde_json as json;
 use serde_pickle as pickle;
 use std::collections::BTreeMap;
-use std::env;
 use std::fs;
 use std::fs::File;
-use std::io::{stdin, stdout, Read};
-use std::process::exit;
+use std::io::{Read};
 
 #[repr(C)]
 pub struct ReqStruct {
@@ -34,8 +32,18 @@ pub extern "C" fn rust_get(link: *const c_char) -> ReqStruct {
 }
 
 #[no_mangle]
-pub extern "C" fn dict_pass() -> i64 {
-    let reader: Box<Read> = Box::new(File::open("filename.pickle").unwrap());
+pub extern "C" fn dict_pass(input_temp_file: *const c_char, output_temp_file: *const c_char) -> i64 {
+    // File to read and write to
+    assert!(!input_temp_file.is_null());
+    assert!(!output_temp_file.is_null());
+    let temp_file_c_str = unsafe { CStr::from_ptr(input_temp_file) };
+    let filename = temp_file_c_str.to_str().expect("Not a valid UTF-8 string");
+
+    let output_temp_file_c_str = unsafe { CStr::from_ptr(output_temp_file) };
+    let output_filename = output_temp_file_c_str.to_str().expect("Not a valid UTF-8 string");
+
+    //println!("{:#?}", output_filename);
+    let reader: Box<Read> = Box::new(File::open(filename).unwrap());
     let decoded: json::Value = pickle::from_reader(reader).unwrap();
     //println!("{:#?}", decoded["url"]);
     let temp = decoded["url"].as_str().expect("Not a valid UTF-8 string");
@@ -44,9 +52,7 @@ pub extern "C" fn dict_pass() -> i64 {
     let mut map = BTreeMap::new();
     map.insert("response".to_string(), resp);
     let serialized = serde_pickle::to_vec(&map, true).unwrap();
-    fs::write("a.pickle", serialized).expect("Unable to write file");
-    
-    //println!("{:#?}", resp);
+    fs::write(output_filename, serialized).expect("Unable to write file");
     0
 }
     // Some potentiall useful code for later
