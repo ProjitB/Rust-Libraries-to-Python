@@ -28,12 +28,15 @@ def read_string(bytes_string):
 # a = C.rust_get(to_string("https://google.com"))
 # output = read_string(a.response)
 
-to_pass = {'url': 'https://google.com'}
-inp_file = tempfile.NamedTemporaryFile()
-out_file = tempfile.NamedTemporaryFile()
-with open(inp_file.name, 'wb') as handle:
-    pickle.dump(to_pass, handle, protocol=pickle.HIGHEST_PROTOCOL)
-C.dict_pass(to_string(inp_file.name), to_string(out_file.name))
-with open(out_file.name, 'rb') as f:
-    a = pickle.load(f)
-    print(a['response'])
+def function_call(function, data):
+    inp_file = tempfile.NamedTemporaryFile()
+    out_file = tempfile.NamedTemporaryFile()
+    with open(inp_file.name, 'wb') as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    function(to_string(inp_file.name), to_string(out_file.name))
+    with open(out_file.name, 'rb') as f:
+        return pickle.load(f)
+
+data = {'url': 'https://google.com'}
+output = function_call(C.dict_pass, data)
+print(output)
