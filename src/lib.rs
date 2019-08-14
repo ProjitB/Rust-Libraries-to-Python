@@ -60,32 +60,37 @@ pub extern "C" fn dict_pass(input_temp_file: *const c_char, output_temp_file: *c
 
 
 #[no_mangle]
-pub extern "C" fn rust_post(input_temp_file: *const c_char, output_temp_file: *const c_char) {
+pub extern "C" fn rust_post(input_temp_file: *const c_char) -> RetStruct{
     // File to read and write to
     let input_filename = unsafe { CStr::from_ptr(input_temp_file).to_str().expect("Not a valid UTF-8 string") };
-    let output_filename = unsafe { CStr::from_ptr(output_temp_file).to_str().expect("Not a valid UTF-8 string") };
 
     //Processing
     let reader: Box<Read> = Box::new(File::open(input_filename).unwrap());
     let decoded: json::Value = pickle::from_reader(reader).unwrap();
     let mut map = BTreeMap::new();
 
+    //To Implement
     let data = &decoded["data"];
     let url = Url::parse(&decoded["url"].as_str().expect("Not a valid UTF-8 string")).unwrap();
     let client = reqwest::Client::new();
-    let mut res = client.post(url)
+    let mut resp = client.post(url)
         .json(&data)
         .send().unwrap();
+    map.insert("response".to_string(), resp.text().unwrap());
 
-    map.insert("response".to_string(), res.text().unwrap());
     //Processing
-
-    let serialized = serde_pickle::to_vec(&map, true).unwrap();
-    fs::write(output_filename, serialized).expect("Unable to write file");
+    let mut serialized = serde_pickle::to_vec(&map, true).unwrap();
+    let x = serialized.len();
+    let p = serialized.as_mut_ptr();
+    mem::forget(serialized);
+    RetStruct{
+    length: x as i64,
+    response: p
+    }
 }
 
 #[no_mangle]
-pub extern "C" fn alt_dict_pass(input_temp_file: *const c_char) -> RetStruct {
+pub extern "C" fn general_pass(input_temp_file: *const c_char) -> RetStruct {
     // File to read and write to
     let input_filename = unsafe { CStr::from_ptr(input_temp_file).to_str().expect("Not a valid UTF-8 string") };
 
@@ -95,6 +100,7 @@ pub extern "C" fn alt_dict_pass(input_temp_file: *const c_char) -> RetStruct {
     let mut map = BTreeMap::new();
 
     //Needs to be implemented
+    // Implementing reqwest get in this case
     let url = Url::parse(&decoded["url"].as_str().expect("Not a valid UTF-8 string")).unwrap();
     let resp = reqwest::get(url).unwrap().text().unwrap();
     map.insert("response".to_string(), resp);
@@ -104,12 +110,10 @@ pub extern "C" fn alt_dict_pass(input_temp_file: *const c_char) -> RetStruct {
     let mut serialized = serde_pickle::to_vec(&map, true).unwrap();
     let x = serialized.len();
     let p = serialized.as_mut_ptr();
-    unsafe {
-        mem::forget(serialized);
-        RetStruct{
-        length: x as i64,
-        response: p
-        }
+    mem::forget(serialized);
+    RetStruct{
+    length: x as i64,
+    response: p
     }
 
 }
