@@ -31,10 +31,10 @@ def function_call(function, data):
         pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     val = function(to_string(inp_file.name))
     obj  = pickle.loads(read_pickle_bytes(val.response, val.length))
-    return eval(obj['response'])
+    return obj['response']
 
 data = {'url': 'https://postman-echo.com/post', 'data':{"hello": "world"}}
-output = function_call(C.rust_post, data)
+output = eval(function_call(C.rust_post, data))
 print(type(output))
 print(output)
 print(output["args"])
