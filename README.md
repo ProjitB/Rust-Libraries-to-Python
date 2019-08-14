@@ -86,5 +86,55 @@ def old_function_call(function, data):
         return obj
 ```
 This function call creates two separate temporary files.
-The data that needs to be passed to the function on the other side
+The data that needs to be passed to the function on the other side in the form of a dictionary.
+The function then calls the Rust function, giving the two input and output file names as parameters, and then returns the result.
+More information in function_call.
+
+
+#### function_call
+```
+def function_call(function, data):
+    inp_file = tempfile.NamedTemporaryFile()
+    with open(inp_file.name, 'wb') as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    val = function(to_string(inp_file.name))
+    obj = pickle.loads(read_pickle_bytes(val.response, val.length))
+    return obj['response']
+```
+This is a bit cleaner implementation of old_function_call, removing the need of the output file as we pass the string back from the rust side
+to_string function declares the String version of the file name in a C compatible format.
+*Note* It is important to note that the struct returned has both a response and length parameter. This will be mentioned on the rust side of the implementation.
+The response will be the response of your rust function, and whatever else you sent back along with that information from your rust interface
+
+#### Example runs
+```
+def test_old():
+    data = {'url': 'https://google.com'}
+    output = old_function_call(LIB.dict_pass, data)
+    print(output)
+
+
+def test_function_call():
+    data = {'url': 'https://postman-echo.com/post', 'data': {"hello": "world"}}
+    output = eval(function_call(LIB.rust_post, data))
+    print(type(output))
+    print(output)
+    print(output["args"])
+```
+*Note* you could return the values and use them instead of printing them.
+
+
+#### Rust src/lib.rs
+
+#### Structs
+```
+#[repr(C)]
+pub struct RetStruct {
+    length: i64,
+    response: *mut u8
+}
+```
+RetStruct is the mechanism by which we will send back information to Python. It contains a response object, which will be a pickle, and the length in bytes of that(so that it can be decoded on the python end).
+*Note* Pickle is used as there is an implementation of it in both python (pickle) and rust (serde_pickle)
+
 
