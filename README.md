@@ -21,6 +21,22 @@ src
 └── lib.rs
 ```
 
+#### To build:
+```
+cargo build --release
+```
+
+#### Contents
+
+Multiple versions of my implementations of an interface for rust, callable from python.
+I created two functions:
+    - (Python) old_function_call -> (Rust) dict_pass
+
+    - (Python) function_call -> (Rust) general_pass
+
+To these you must pass which function, from the cffi interface you want to use, and the data, as a dictionary.
+On the other side of things, in Rust, the function definition should be the same as dict_pass(if using old_function_call), or general_pass(if using function_call)
+
 
 
 
