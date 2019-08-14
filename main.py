@@ -3,6 +3,7 @@ from cffi import FFI
 from ctypes import c_char_p, cdll, cast
 import tempfile
 
+# Rust Function Interface Definitions
 ffi = FFI()
 ffi.cdef("""
    typedef struct {const char* response;} ReqStruct;
@@ -23,7 +24,6 @@ def read_pickle_bytes(pointer, length):
     for i in range(length):
         arr += pointer[i]
     return arr
-
 
 def function_call(function, data):
     inp_file = tempfile.NamedTemporaryFile()

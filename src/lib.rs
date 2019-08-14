@@ -7,7 +7,8 @@ use serde_json as json;
 use serde_pickle as pickle;
 use std::collections::BTreeMap;
 use std::fs;
-use std::fs::File; use std::io::{Read};
+use std::fs::File;
+use std::io::{Read};
 use std::mem;
 
 #[repr(C)]
