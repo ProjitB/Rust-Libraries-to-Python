@@ -44,7 +44,7 @@ def function_call(function, data):
     return obj['response']
 
 # data = {'url': 'https://postman-echo.com/post', 'data':{"hello": "world"}}
-# output = eval(function_call(C.rust_post, data))
+# output = eval(function_call(lib.rust_post, data))
 # print(type(output))
 # print(output)
 # print(output["args"])
