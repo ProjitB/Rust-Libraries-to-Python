@@ -1,11 +1,11 @@
 # Guide to Using Rust Libraries from Python3
 #### Author: Projit Bandyopadhyay
 
-###Aim:
+### Aim:
     - Show how to port some of the functionality from the Rust reqwest library to Python.
     - Show how to pass data between Rust and Python through cffi
 
-###Motivation:
+### Motivation:
     - High import time for the Python Requests library (Run: time python3 -c "import requests")
     - Functionality / Performance in some libraries(or functions) of Rust may be higher than those of Python.
 
@@ -25,6 +25,7 @@ src
 ```
 cargo build --release
 ```
+*Note* This was done on OSX, so your linked library may be different on another platform. Change the path in main.py accordingly
 
 #### Contents
 
