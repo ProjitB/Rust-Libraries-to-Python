@@ -2,7 +2,6 @@ use reqwest;
 use url::Url;
 use std::os::raw::c_char;
 use std::ffi::CStr;
-use std::ffi::CString;
 use serde_json as json;
 use serde_pickle as pickle;
 use std::collections::BTreeMap;
@@ -10,11 +9,6 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read};
 use std::mem;
-
-#[repr(C)]
-pub struct ReqStruct {
-    response: *const c_char
-}
 
 #[repr(C)]
 pub struct RetStruct {
