@@ -137,4 +137,73 @@ pub struct RetStruct {
 RetStruct is the mechanism by which we will send back information to Python. It contains a response object, which will be a pickle, and the length in bytes of that(so that it can be decoded on the python end).
 *Note* Pickle is used as there is an implementation of it in both python (pickle) and rust (serde_pickle)
 
+#### Dict Pass
+```
+pub extern "C" fn dict_pass(input_temp_file: *const c_char, output_temp_file: *const c_char) {
+    // File to read and write to
+    let input_filename = unsafe { CStr::from_ptr(input_temp_file).to_str().expect("Not a valid UTF-8 string") };
+    let output_filename = unsafe { CStr::from_ptr(output_temp_file).to_str().expect("Not a valid UTF-8 string") };
 
+    //Processing
+    let reader: Box<Read> = Box::new(File::open(input_filename).unwrap());
+    let decoded: json::Value = pickle::from_reader(reader).unwrap();
+    let mut map = BTreeMap::new();
+
+    //Needs to be implemented
+    let url = Url::parse(&decoded["url"].as_str().expect("Not a valid UTF-8 string")).unwrap();
+    let resp = reqwest::get(url).unwrap().text().unwrap();
+    map.insert("response".to_string(), resp);
+
+
+    //Processing
+    let serialized = serde_pickle::to_vec(&map, true).unwrap();
+    fs::write(output_filename, serialized).expect("Unable to write file");
+}
+```
+This function is compatible with the old_function_call python function.
+To create another function like this, all that needs to be done is to copy the above except for the "Needs to be implemented" part of the code. The function name should also be changed to whatever you want.
+The File read write acquires the file names of the input and output files. The input file will read the pickled data passed from python, while the output will send pickled data back.
+In the processing section, we decode the pickled data. All variables passed in the dictionary from python are now accessable via &decoded[variable]. Based on the type required for the rust function that you wish to invoke, you may need to do some type manipulations.
+Insert into map all the responses you wish to collect from the rust function and it will be sent back to the python script. (Look at the needs to be implemented part for an example of how to do this)
+
+
+
+#### General Pass
+```
+#[no_mangle]
+pub extern "C" fn general_pass(input_temp_file: *const c_char) -> RetStruct {
+    // File to read and write to
+    let input_filename = unsafe { CStr::from_ptr(input_temp_file).to_str().expect("Not a valid UTF-8 string") };
+
+    //Processing
+    let reader: Box<Read> = Box::new(File::open(input_filename).unwrap());
+    let decoded: json::Value = pickle::from_reader(reader).unwrap();
+    let mut map = BTreeMap::new();
+
+    //Needs to be implemented
+    // Implementing reqwest get in this case
+    let url = Url::parse(&decoded["url"].as_str().expect("Not a valid UTF-8 string")).unwrap();
+    let resp = reqwest::get(url).unwrap().text().unwrap();
+    map.insert("response".to_string(), resp);
+
+
+    //Processing
+    let mut serialized = serde_pickle::to_vec(&map, true).unwrap();
+    let x = serialized.len();
+    let p = serialized.as_mut_ptr();
+    mem::forget(serialized);
+    RetStruct{
+    length: x as i64,
+    response: p
+    }
+
+}
+```
+This function is compatible with function_call on the python end
+General pass is very similar to the dict pass except for the way values are returned. The serialized data is sent back in the form of a struct, but you don't need to worry about this.
+Just the "Needs to be implemented" part needs to be filled out, with map being populated with the results that you want to send back to python.
+
+#### Example: Rust-Post
+```
+
+```
