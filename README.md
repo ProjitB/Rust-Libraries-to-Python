@@ -203,7 +203,60 @@ This function is compatible with function_call on the python end
 General pass is very similar to the dict pass except for the way values are returned. The serialized data is sent back in the form of a struct, but you don't need to worry about this.
 Just the "Needs to be implemented" part needs to be filled out, with map being populated with the results that you want to send back to python.
 
-#### Example: Rust-Post
+#### Example: rust_post
+```
+#[no_mangle]
+pub extern "C" fn rust_post(input_temp_file: *const c_char) -> RetStruct{
+    // File to read and write to
+    let input_filename = unsafe { CStr::from_ptr(input_temp_file).to_str().expect("Not a valid UTF-8 string") };
+
+    //Processing
+    let reader: Box<Read> = Box::new(File::open(input_filename).unwrap());
+    let decoded: json::Value = pickle::from_reader(reader).unwrap();
+    let mut map = BTreeMap::new();
+
+    //To Implement
+    let data = &decoded["data"];
+    let url = Url::parse(&decoded["url"].as_str().expect("Not a valid UTF-8 string")).unwrap();
+    let client = reqwest::Client::new();
+    let mut resp = client.post(url)
+        .json(&data)
+        .send().unwrap();
+    map.insert("response".to_string(), resp.text().unwrap());
+
+    //Processing
+    let mut serialized = serde_pickle::to_vec(&map, true).unwrap();
+    let x = serialized.len();
+    let p = serialized.as_mut_ptr();
+    mem::forget(serialized);
+    RetStruct{
+    length: x as i64,
+    response: p
+    }
+}
+```
+Using the framework of general_pass, we now port reqwest::post to python. Note that we receive a data parameter as well as a url parameter which must be passed from the python end. We then insert the response that we get back into the map, and it is sent back to python :). To see how it is invoked on the python end, look at the function test_function_call() in main.py
+
+#### Some Performance Stats
+```
+benchmarking python3 test_rust_reqwest.py
+time                 4.015 s    (1.627 s .. 6.019 s)
+                     0.960 R²   (0.858 R² .. 1.000 R²)
+mean                 4.271 s    (3.997 s .. 4.544 s)
+std dev              346.8 ms   (161.4 ms .. 445.1 ms)
+variance introduced by outliers: 21% (moderately inflated)
+
+--------------------------
+benchmarking python3 test_python_requests.py
+time                 4.322 s    (3.639 s .. 5.580 s)
+                     0.990 R²   (0.978 R² .. 1.000 R²)
+mean                 4.009 s    (3.898 s .. 4.203 s)
+std dev              189.0 ms   (45.55 ms .. 249.4 ms)
+variance introduced by outliers: 19% (moderately inflated)
 ```
 
-```
+There are some speed improvements on benchmarking some of the performance(used get request to http://google.com for the benchmark)
+These may be more noticeable when only a few requests are made, as the import of the python requests library takes a few hundered milliseconds on average
+However, this is a simple case, but this framework should generalize to allowing any rust library to be used, provided you create an interface as shown above. There can be benefits of both performance and access to another set of cool libaries from python as a result of this.
+
+#### Disclaimer: I've left out some of the error handling that can be done on the rust side. Feel free to use this (terrible) code or modify it further
